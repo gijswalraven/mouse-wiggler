@@ -11,7 +11,8 @@ A Windows system tray application that prevents screen lock by periodically movi
 - **Configurable Interval**: Choose between 10s, 30s, 1m, 2m, or 5m
 - **Movement Patterns**: Simple (back-and-forth) or Circle pattern
 - **Visual Feedback**: Green icon when active, red X icon when paused
-- **Single File**: Distributable as a single 166 KB executable
+- **Start with Windows**: Option to launch automatically at Windows startup (starts disabled)
+- **Single File**: Distributable as a single ~169 KB executable
 
 ## Usage
 
@@ -22,7 +23,18 @@ A Windows system tray application that prevents screen lock by periodically movi
    - Enable/Disable toggle
    - Interval selection
    - Movement pattern selection
+   - Start with Windows
+   - About
    - Exit
+
+## Start with Windows
+
+To have Mouse Wiggler launch automatically when Windows starts:
+
+1. Right-click the tray icon
+2. Select "Start with Windows" (a checkmark appears when enabled)
+3. The app will start in **disabled mode** at Windows startup for safety
+4. Double-click the icon to enable wiggling when needed
 
 ## System Requirements
 
@@ -31,7 +43,7 @@ A Windows system tray application that prevents screen lock by periodically movi
 
 ## Download
 
-Get the latest `MouseWiggler.exe` from the `publish` folder (~166 KB).
+Get the latest `MouseWiggler.exe` from the `publish` folder (~169 KB).
 
 ## Building from Source
 
@@ -39,6 +51,6 @@ Get the latest `MouseWiggler.exe` from the `publish` folder (~166 KB).
 # Build and run for development
 dotnet run --project src/MouseWiggler.csproj
 
-# Publish single-file release (framework-dependent, ~166 KB)
-dotnet publish src/MouseWiggler.csproj -c Release -r win-x64 -o publish
+# Publish single-file release (framework-dependent, ~169 KB)
+dotnet publish src/MouseWiggler.csproj -c Release -r win-x64 -p:DebugType=none -o publish
 ```
