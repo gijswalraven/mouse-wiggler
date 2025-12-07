@@ -1,4 +1,6 @@
 using MouseWiggler;
 
 ApplicationConfiguration.Initialize();
-Application.Run(new TrayApplicationContext());
+
+var startDisabled = args.Contains("--disabled");
+Application.Run(new TrayApplicationContext(startDisabled));

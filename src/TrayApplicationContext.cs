@@ -11,10 +11,10 @@ public class TrayApplicationContext : ApplicationContext
     private readonly Icon _inactiveIcon;
     private bool _enabled;
 
-    public TrayApplicationContext()
+    public TrayApplicationContext(bool startDisabled = false)
     {
         _settings = new WigglerSettings();
-        _enabled = _settings.Enabled;
+        _enabled = startDisabled ? false : _settings.Enabled;
 
         _activeIcon = LoadEmbeddedIcon("MouseWiggler.mouse-active.ico");
         _inactiveIcon = LoadEmbeddedIcon("MouseWiggler.mouse-inactive.ico");
@@ -41,6 +41,9 @@ public class TrayApplicationContext : ApplicationContext
         }
 
         UpdateTrayIcon();
+
+        // Update existing startup shortcut to ensure it has --disabled flag
+        UpdateStartupShortcutIfExists();
     }
 
     private static Icon LoadEmbeddedIcon(string resourceName)
@@ -92,9 +95,107 @@ public class TrayApplicationContext : ApplicationContext
 
         menu.Items.Add(new ToolStripSeparator());
 
+        var startupItem = new ToolStripMenuItem("Start with Windows", null, (s, e) => ToggleStartup())
+        {
+            Checked = IsInStartup(),
+            Name = "startupItem"
+        };
+        menu.Items.Add(startupItem);
+
+        menu.Items.Add(new ToolStripSeparator());
+
+        menu.Items.Add(new ToolStripMenuItem("About", null, (s, e) => ShowAbout()));
         menu.Items.Add(new ToolStripMenuItem("Exit", null, (s, e) => Exit()));
 
         return menu;
+    }
+
+    private static void ShowAbout()
+    {
+        var result = MessageBox.Show(
+            "Mouse Wiggler\n\n" +
+            "Prevents screen lock by periodically moving the mouse cursor.\n\n" +
+            "GitHub: github.com/gijswalraven/mouse-wiggler\n\n" +
+            "Click OK to open the repository.",
+            "About Mouse Wiggler",
+            MessageBoxButtons.OKCancel,
+            MessageBoxIcon.Information);
+
+        if (result == DialogResult.OK)
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://github.com/gijswalraven/mouse-wiggler",
+                UseShellExecute = true
+            });
+        }
+    }
+
+    private static string StartupShortcutPath =>
+        Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.Startup),
+            "MouseWiggler.lnk");
+
+    private static bool IsInStartup() => File.Exists(StartupShortcutPath);
+
+    private void ToggleStartup()
+    {
+        if (IsInStartup())
+        {
+            File.Delete(StartupShortcutPath);
+        }
+        else
+        {
+            CreateShortcut(StartupShortcutPath, Application.ExecutablePath);
+        }
+        UpdateStartupMenu();
+    }
+
+    /// <summary>
+    /// Recreates the startup shortcut if it exists (to update arguments).
+    /// Call this after updating the app to ensure --disabled flag is present.
+    /// </summary>
+    private static void UpdateStartupShortcutIfExists()
+    {
+        if (File.Exists(StartupShortcutPath))
+        {
+            File.Delete(StartupShortcutPath);
+            CreateShortcut(StartupShortcutPath, Application.ExecutablePath);
+        }
+    }
+
+    private void UpdateStartupMenu()
+    {
+        if (_trayIcon.ContextMenuStrip?.Items["startupItem"] is ToolStripMenuItem item)
+        {
+            item.Checked = IsInStartup();
+        }
+    }
+
+    private static void CreateShortcut(string shortcutPath, string targetPath)
+    {
+        // Use PowerShell to create shortcut (avoids COM interop issues in .NET Core)
+        // Start with --disabled flag so it doesn't wiggle until user enables it
+        var script = $@"
+            $ws = New-Object -ComObject WScript.Shell
+            $s = $ws.CreateShortcut('{shortcutPath}')
+            $s.TargetPath = '{targetPath}'
+            $s.Arguments = '--disabled'
+            $s.WorkingDirectory = '{Path.GetDirectoryName(targetPath)}'
+            $s.Description = 'Mouse Wiggler'
+            $s.Save()
+        ";
+
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "powershell.exe",
+            Arguments = $"-NoProfile -Command \"{script.Replace("\"", "\\\"")}\"",
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = System.Diagnostics.Process.Start(psi);
+        process?.WaitForExit();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
