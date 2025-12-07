@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>MouseWiggler</RootNamespace>
+    <OutputType>WinExe</OutputType>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>mouse-active.ico</ApplicationIcon>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>false</SelfContained>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="mouse-active.ico">
+      <LogicalName>MouseWiggler.mouse-active.ico</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="mouse-inactive.ico">
+      <LogicalName>MouseWiggler.mouse-inactive.ico</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>
