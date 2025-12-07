@@ -2,6 +2,8 @@
 
 A Windows system tray application that prevents screen lock by periodically moving the mouse cursor.
 
+> **Security Warning**: Preventing your screen from locking leaves your computer vulnerable to unauthorized access. Only use this tool when you are physically present and can monitor your workstation. Never use it in shared or public environments. Your organization's security policies may prohibit disabling screen lock.
+
 ## Features
 
 - **System Tray Icon**: Lives in the Windows notification area with visual status indicator
