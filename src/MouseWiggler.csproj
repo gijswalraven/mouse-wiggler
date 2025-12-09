@@ -20,6 +20,9 @@
     <EmbeddedResource Include="mouse-inactive.ico">
       <LogicalName>MouseWiggler.mouse-inactive.ico</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="mouse-battery.ico">
+      <LogicalName>MouseWiggler.mouse-battery.ico</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 

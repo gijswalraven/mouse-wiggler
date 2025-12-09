@@ -16,7 +16,7 @@ public class WigglerSettings
     /// <summary>
     /// Number of pixels to move the mouse.
     /// </summary>
-    public int PixelDistance { get; set; } = 1;
+    public int PixelDistance { get; set; } = 4;
 
     /// <summary>
     /// Whether to use circle wiggle pattern instead of simple back-and-forth.
@@ -27,4 +27,9 @@ public class WigglerSettings
     /// Whether the service is enabled.
     /// </summary>
     public bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// Whether to automatically pause when running on battery power.
+    /// </summary>
+    public bool PauseOnBattery { get; set; } = true;
 }

@@ -6,10 +6,13 @@ public class TrayApplicationContext : ApplicationContext
 {
     private readonly NotifyIcon _trayIcon;
     private readonly System.Windows.Forms.Timer _timer;
+    private readonly System.Windows.Forms.Timer _batteryCheckTimer;
     private readonly WigglerSettings _settings;
     private readonly Icon _activeIcon;
     private readonly Icon _inactiveIcon;
+    private readonly Icon _batteryIcon;
     private bool _enabled;
+    private bool _pausedDueToBattery;
 
     public TrayApplicationContext(bool startDisabled = false)
     {
@@ -18,6 +21,7 @@ public class TrayApplicationContext : ApplicationContext
 
         _activeIcon = LoadEmbeddedIcon("MouseWiggler.mouse-active.ico");
         _inactiveIcon = LoadEmbeddedIcon("MouseWiggler.mouse-inactive.ico");
+        _batteryIcon = LoadEmbeddedIcon("MouseWiggler.mouse-battery.ico");
 
         _trayIcon = new NotifyIcon
         {
@@ -39,6 +43,17 @@ public class TrayApplicationContext : ApplicationContext
         {
             _timer.Start();
         }
+
+        // Battery check timer - check every 10 seconds
+        _batteryCheckTimer = new System.Windows.Forms.Timer
+        {
+            Interval = 10000
+        };
+        _batteryCheckTimer.Tick += BatteryCheckTimer_Tick;
+        _batteryCheckTimer.Start();
+
+        // Initial battery check
+        CheckBatteryStatus();
 
         UpdateTrayIcon();
 
@@ -92,6 +107,13 @@ public class TrayApplicationContext : ApplicationContext
             Checked = _settings.UseCirclePattern
         });
         menu.Items.Add(patternMenu);
+
+        var batteryItem = new ToolStripMenuItem("Pause on Battery", null, (s, e) => TogglePauseOnBattery())
+        {
+            Checked = _settings.PauseOnBattery,
+            Name = "batteryItem"
+        };
+        menu.Items.Add(batteryItem);
 
         menu.Items.Add(new ToolStripSeparator());
 
@@ -200,8 +222,11 @@ public class TrayApplicationContext : ApplicationContext
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
-        if (_enabled)
+        if (_enabled && !_pausedDueToBattery)
         {
+            // Prevent Windows from sleeping/locking
+            MouseMover.PreventSleep();
+
             if (_settings.UseCirclePattern)
             {
                 MouseMover.CircleWiggle(_settings.PixelDistance);
@@ -210,6 +235,39 @@ public class TrayApplicationContext : ApplicationContext
             {
                 MouseMover.Wiggle(_settings.PixelDistance);
             }
+        }
+    }
+
+    private void BatteryCheckTimer_Tick(object? sender, EventArgs e)
+    {
+        CheckBatteryStatus();
+    }
+
+    private void CheckBatteryStatus()
+    {
+        if (!_settings.PauseOnBattery)
+        {
+            if (_pausedDueToBattery)
+            {
+                _pausedDueToBattery = false;
+                UpdateTrayIcon();
+            }
+            return;
+        }
+
+        var powerStatus = SystemInformation.PowerStatus;
+        var isOnBattery = powerStatus.PowerLineStatus == PowerLineStatus.Offline;
+
+        if (isOnBattery && !_pausedDueToBattery)
+        {
+            _pausedDueToBattery = true;
+            MouseMover.AllowSleep();
+            UpdateTrayIcon();
+        }
+        else if (!isOnBattery && _pausedDueToBattery)
+        {
+            _pausedDueToBattery = false;
+            UpdateTrayIcon();
         }
     }
 
@@ -224,6 +282,7 @@ public class TrayApplicationContext : ApplicationContext
         else
         {
             _timer.Stop();
+            MouseMover.AllowSleep();
         }
 
         UpdateTrayIcon();
@@ -243,10 +302,38 @@ public class TrayApplicationContext : ApplicationContext
         UpdatePatternMenu();
     }
 
+    private void TogglePauseOnBattery()
+    {
+        _settings.PauseOnBattery = !_settings.PauseOnBattery;
+        UpdateBatteryMenu();
+        CheckBatteryStatus();
+    }
+
+    private void UpdateBatteryMenu()
+    {
+        if (_trayIcon.ContextMenuStrip?.Items["batteryItem"] is ToolStripMenuItem item)
+        {
+            item.Checked = _settings.PauseOnBattery;
+        }
+    }
+
     private void UpdateTrayIcon()
     {
-        _trayIcon.Icon = _enabled ? _activeIcon : _inactiveIcon;
-        _trayIcon.Text = _enabled ? "Mouse Wiggler (Active)" : "Mouse Wiggler (Paused)";
+        if (_pausedDueToBattery && _enabled)
+        {
+            _trayIcon.Icon = _batteryIcon;
+            _trayIcon.Text = "Mouse Wiggler (Paused - On Battery)";
+        }
+        else if (_enabled)
+        {
+            _trayIcon.Icon = _activeIcon;
+            _trayIcon.Text = "Mouse Wiggler (Active)";
+        }
+        else
+        {
+            _trayIcon.Icon = _inactiveIcon;
+            _trayIcon.Text = "Mouse Wiggler (Paused)";
+        }
     }
 
     private void UpdateMenuChecked()
@@ -291,6 +378,8 @@ public class TrayApplicationContext : ApplicationContext
     private void Exit()
     {
         _timer.Stop();
+        _batteryCheckTimer.Stop();
+        MouseMover.AllowSleep();
         _trayIcon.Visible = false;
         _trayIcon.Dispose();
         Application.Exit();
