@@ -1,5 +1,28 @@
 # Release Notes
 
+## v1.1.0
+
+### New Features
+
+- **Single instance check** - Prevents multiple instances from running simultaneously
+- **Battery pause** - Automatically pauses wiggling when on battery power (resumes on AC)
+- **Improved screen lock prevention** - Uses SendInput API for more reliable prevention
+
+### Bug Fixes
+
+- Fixed screen lock prevention not working reliably on some systems
+
+### Download
+
+Download `MouseWiggler.exe` (~172 KB).
+
+### Requirements
+
+- Windows 10/11 (x64)
+- [.NET 8.0 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)
+
+---
+
 ## v1.0.0 - Initial Release
 
 ### Features
